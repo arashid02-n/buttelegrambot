@@ -118,20 +118,30 @@ function closeOfferModal() {
 /**
  * Handles the form submission by sending data to the Python FastAPI backend.
  */
+// Ensure offerModal reference exists if defined above this block
+const offerModal = document.getElementById('offerModal');
+
 async function handleFormSubmit(event) {
   event.preventDefault(); 
   
   const formElement = event.target;
+
+  // 1. Check HTML5 form validation (pattern, min/max, required)
+  if (!formElement.checkValidity()) {
+    formElement.reportValidity(); // Shows browser error messages/red outlines
+    return; // Stops execution if any field is invalid!
+  }
+
   const submitBtn = formElement.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.textContent;
 
-  // 1. Gather form data into a clean object
+  // 2. Gather form data into a clean object
   const formData = new FormData(formElement);
   const offerData = {
     bot_username: formData.get('bot_username'),
     name: formData.get('name'),
     contact: formData.get('contact'),
-    bid: formData.get('bid'),
+    bid: Number(formData.get('bid')), // Parsed as number for clean backend processing
     notes: formData.get('notes') || null
   };
 
@@ -140,9 +150,7 @@ async function handleFormSubmit(event) {
     submitBtn.textContent = "Sending Offer...";
     submitBtn.disabled = true;
 
-    // 2. Send the POST request to our local Python backend
-    // NOTE: When making the site live, change this URL to your live domain endpoint!
-    // Using a relative path means this works locally, on Linux staging, AND on the live domain!
+    // 3. Send the POST request to the backend relative endpoint
     const response = await fetch('/api/submit-form', {
       method: 'POST',
       headers: {
@@ -157,10 +165,13 @@ async function handleFormSubmit(event) {
       throw new Error(result.detail || 'Server responded with an error.');
     }
 
-    // 3. Success! Notify the user and reset the form
+    // 4. Success! Notify user and reset
     alert(`Thank you, ${offerData.name}! Your offer of $${offerData.bid} for ${offerData.bot_username} has been sent directly to our brokers.`);
     formElement.reset();
-    closeOfferModal();
+    
+    if (typeof closeOfferModal === 'function') {
+      closeOfferModal();
+    }
 
   } catch (error) {
     console.error("Submission Error:", error);
@@ -182,12 +193,13 @@ if (modal) {
       rect.left <= event.clientX &&
       event.clientX <= rect.left + rect.width
     );
-    if (!isInDialog) {
+    if (!isInDialog && typeof closeOfferModal === 'function') {
       closeOfferModal();
     }
   });
 }
 
+// Guide Modal Handling
 const guideModal = document.getElementById('guideModal');
 
 function openGuideModal() {
@@ -198,7 +210,7 @@ function closeGuideModal() {
   if (guideModal) guideModal.close();
 }
 
-// Enable clicking outside the box to close the guide modal too
+// Light dismiss for guide modal
 if (guideModal) {
   guideModal.addEventListener('click', (event) => {
     const rect = guideModal.getBoundingClientRect();
