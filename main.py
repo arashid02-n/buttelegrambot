@@ -38,7 +38,7 @@ class FormSubmission(BaseModel):
     bot_username: str
     name: str
     contact: str
-    bid: str
+    bid: str | int | float
     notes: str | None = None
 
 

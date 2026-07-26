@@ -150,6 +150,13 @@ async function handleFormSubmit(event) {
     submitBtn.textContent = "Sending Offer...";
     submitBtn.disabled = true;
 
+    // SMART URL ROUTER:
+    const isLocalDev = window.location.port === '3000' || 
+                       window.location.port === '5500' || 
+                       window.location.protocol === 'file:';
+    
+    const apiUrl = isLocalDev ? 'http://127.0.0.1:8000/api/submit-form' : '/api/submit-form';
+
     // 3. Send the POST request to the backend relative endpoint
     const response = await fetch('/api/submit-form', {
       method: 'POST',
