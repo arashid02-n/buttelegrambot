@@ -125,6 +125,12 @@ async function handleFormSubmit(event) {
   event.preventDefault(); 
   
   const formElement = event.target;
+
+  if (!formElement.checkValidity()) {
+    formElement.reportValidity();
+    return;
+  }
+
   const submitBtn = formElement.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.textContent;
 
@@ -132,19 +138,6 @@ async function handleFormSubmit(event) {
   const formData = new FormData(formElement);
   const contactInput = formData.get('contact').trim();
   const bidInput = formData.get('bid');
-
-  // 2. BULLETPROOF CONTACT VALIDATION (Regex in JavaScript)
-  // Checks strictly for:
-  // - Telegram handle: @ followed by 3-32 chars (@username)
-  // - Email: standard email format (name@domain.com)
-  // - Phone/WhatsApp: digits, spaces, plus signs, hyphens, parentheses (7 to 20 chars)
-  const contactRegex = /^(@[a-zA-Z0-9_]{3,32}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+?[0-9\s()\-]{7,20})$/;
-
-  if (!contactRegex.test(contactInput)) {
-    alert("⚠️ Invalid Contact Info!\n\nPlease enter a valid Telegram handle starting with '@' (e.g., @alex), a valid email address, or a WhatsApp phone number.");
-    document.getElementById('buyerContact').focus();
-    return; // Stops execution immediately!
-  }
 
   // 3. Optional: Extra safeguard for bid amount (ensures positive number >= 100)
   if (Number(bidInput) < 100) {
