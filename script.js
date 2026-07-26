@@ -125,23 +125,39 @@ async function handleFormSubmit(event) {
   event.preventDefault(); 
   
   const formElement = event.target;
-
-  // 1. Check HTML5 form validation (pattern, min/max, required)
-  if (!formElement.checkValidity()) {
-    formElement.reportValidity(); // Shows browser error messages/red outlines
-    return; // Stops execution if any field is invalid!
-  }
-
   const submitBtn = formElement.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.textContent;
 
-  // 2. Gather form data into a clean object
+  // 1. Gather form data
   const formData = new FormData(formElement);
+  const contactInput = formData.get('contact').trim();
+  const bidInput = formData.get('bid');
+
+  // 2. BULLETPROOF CONTACT VALIDATION (Regex in JavaScript)
+  // Checks strictly for:
+  // - Telegram handle: @ followed by 3-32 chars (@username)
+  // - Email: standard email format (name@domain.com)
+  // - Phone/WhatsApp: digits, spaces, plus signs, hyphens, parentheses (7 to 20 chars)
+  const contactRegex = /^(@[a-zA-Z0-9_]{3,32}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+?[0-9\s()\-]{7,20})$/;
+
+  if (!contactRegex.test(contactInput)) {
+    alert("⚠️ Invalid Contact Info!\n\nPlease enter a valid Telegram handle starting with '@' (e.g., @alex), a valid email address, or a WhatsApp phone number.");
+    document.getElementById('buyerContact').focus();
+    return; // Stops execution immediately!
+  }
+
+  // 3. Optional: Extra safeguard for bid amount (ensures positive number >= 100)
+  if (Number(bidInput) < 100) {
+    alert("⚠️ Offer amount must be at least $100.");
+    document.getElementById('bidAmount').focus();
+    return;
+  }
+
   const offerData = {
     bot_username: formData.get('bot_username'),
     name: formData.get('name'),
-    contact: formData.get('contact'),
-    bid: Number(formData.get('bid')), // Parsed as number for clean backend processing
+    contact: contactInput,
+    bid: bidInput,
     notes: formData.get('notes') || null
   };
 
@@ -150,15 +166,15 @@ async function handleFormSubmit(event) {
     submitBtn.textContent = "Sending Offer...";
     submitBtn.disabled = true;
 
-    // SMART URL ROUTER:
+    // SMART URL ROUTER
     const isLocalDev = window.location.port === '3000' || 
                        window.location.port === '5500' || 
                        window.location.protocol === 'file:';
-    
+                       
     const apiUrl = isLocalDev ? 'http://127.0.0.1:8000/api/submit-form' : '/api/submit-form';
 
-    // 3. Send the POST request to the backend relative endpoint
-    const response = await fetch('/api/submit-form', {
+    // 4. Send the POST request
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -172,7 +188,7 @@ async function handleFormSubmit(event) {
       throw new Error(result.detail || 'Server responded with an error.');
     }
 
-    // 4. Success! Notify user and reset
+    // 5. Success! Notify user and reset
     alert(`Thank you, ${offerData.name}! Your offer of $${offerData.bid} for ${offerData.bot_username} has been sent directly to our brokers.`);
     formElement.reset();
     
